@@ -18,48 +18,47 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import os
+import copy
 import json
 import mimetypes
-import chardet  # dependency of requests
-import copy
+import os
 
-from flask import Blueprint, jsonify
-from flask import request, redirect, send_from_directory, make_response, flash, abort, url_for, Response
+import chardet  # dependency of requests
+from flask import (Blueprint, Response, abort, flash, jsonify, make_response,
+                   redirect, request, send_from_directory)
 from flask import session as flask_session
-from flask_babel import gettext as _
+from flask import url_for
 from flask_babel import get_locale
-from flask_login import login_user, logout_user, login_required, current_user
+from flask_babel import gettext as _
 from flask_limiter import RateLimitExceeded
 from flask_limiter.util import get_remote_address
-from sqlalchemy.exc import IntegrityError, InvalidRequestError, OperationalError
-from sqlalchemy.sql.expression import text, func, false, not_, and_, or_
+from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy.exc import (IntegrityError, InvalidRequestError,
+                            OperationalError)
 from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy.sql.expression import and_, false, func, not_, or_, text
 from sqlalchemy.sql.functions import coalesce
-
 from werkzeug.datastructures import Headers
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import constants, logger, isoLanguages, services
-from . import db, ub, config, app
-from . import calibre_db, kobo_sync_status
-from .search import render_search_results, render_adv_search_results
-from .gdriveutils import getFileFromEbooksFolder, do_gdrive_download
-from .helper import check_valid_domain, check_email, check_username, \
-    get_book_cover, get_series_cover_thumbnail, get_download_link, send_mail, generate_random_password, \
-    send_registration_mail, check_send_to_ereader, check_read_formats, tags_filters, reset_password, valid_email, \
-    edit_book_read_status, valid_password
+from . import (app, calibre_db, config, constants, db, isoLanguages,
+               kobo_sync_status, limiter, logger, services, ub)
+from .babel import get_available_locale
+from .gdriveutils import do_gdrive_download, getFileFromEbooksFolder
+from .helper import (check_email, check_read_formats, check_send_to_ereader,
+                     check_username, check_valid_domain, edit_book_read_status,
+                     generate_random_password, get_book_cover,
+                     get_download_link, get_series_cover_thumbnail,
+                     reset_password, send_mail, send_registration_mail,
+                     tags_filters, valid_email, valid_password)
+from .kobo_sync_status import change_archived_books, remove_synced_book
 from .pagination import Pagination
 from .redirect import redirect_back
-from .babel import get_available_locale
-from .usermanagement import login_required_if_no_ano
-from .kobo_sync_status import remove_synced_book
 from .render_template import render_title_template
-from .kobo_sync_status import change_archived_books
-from . import limiter
+from .search import render_adv_search_results, render_search_results
 from .services.worker import WorkerThread
 from .tasks_status import render_task_status
-
+from .usermanagement import login_required_if_no_ano
 
 feature_support = {
     'ldap': bool(services.ldap),
@@ -68,7 +67,8 @@ feature_support = {
 }
 
 try:
-    from .oauth_bb import oauth_check, register_user_with_oauth, logout_oauth_user, get_oauth_status
+    from .oauth_bb import (get_oauth_status, logout_oauth_user, oauth_check,
+                           register_user_with_oauth)
 
     feature_support['oauth'] = True
 except ImportError:
@@ -88,7 +88,7 @@ except ImportError:
 def add_security_headers(resp):
     csp = "default-src 'self'"
     csp += ''.join([' ' + host for host in config.config_trustedhosts.strip().split(',')])
-    csp += " 'unsafe-inline' 'unsafe-eval'; font-src 'self' data:; img-src 'self'"
+    csp += " 'unsafe-inline' 'unsafe-eval'; font-src 'self' data: 'fonts.googleapis.com'; img-src 'self'"
     if request.path.startswith("/author/") and config.config_use_goodreads:
         csp += " images.gr-assets.com i.gr-assets.com s.gr-assets.com"
     csp += " data:"
