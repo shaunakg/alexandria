@@ -16,9 +16,10 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import os
+import sys
 from collections import namedtuple
+
 from sqlalchemy import __version__ as sql_version
 
 sqlalchemy_version2 = ([int(x) for x in sql_version.split('.')] >= [2, 0, 0])
@@ -165,9 +166,14 @@ BookMeta = namedtuple('BookMeta', 'file_path, extension, title, author, cover, d
 
 STABLE_VERSION = {'version': '0.6.21 Beta'}
 
+import git
+
+repo = git.Repo(search_parent_directories=True)
+
 NIGHTLY_VERSION = dict()
-NIGHTLY_VERSION[0] = '$Format:%H$'
-NIGHTLY_VERSION[1] = '$Format:%cI$'
+NIGHTLY_VERSION[0] = repo.head.object.hexsha
+NIGHTLY_VERSION[1] = repo.head.object.committed_datetime.isoformat()
+
 # NIGHTLY_VERSION[0] = 'bb7d2c6273ae4560e83950d36d64533343623a57'
 # NIGHTLY_VERSION[1] = '2018-09-09T10:13:08+02:00'
 
