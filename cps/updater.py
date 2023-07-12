@@ -16,11 +16,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import os
 import datetime
 import json
+import os
 import shutil
+import sys
 import threading
 import time
 import zipfile
@@ -31,11 +31,10 @@ import requests
 from flask_babel import format_datetime
 from flask_babel import gettext as _
 
-from . import constants, logger  #  config, web_server
-
+from . import constants, logger  # config, web_server
 
 log = logger.create()
-_REPOSITORY_API_URL = 'https://api.github.com/repos/janeczku/calibre-web'
+_REPOSITORY_API_URL = 'https://api.github.com/repos/shaunakg/alexandria'
 
 
 def is_sha1(sha1):
